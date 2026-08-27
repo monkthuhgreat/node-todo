@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  app:
+    build: ./app
+    container_name: todo-app
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=development
+      - MONGO_URI=bW9uZ29kYjovL2FkbWluOnNlY3JldEBtb25nby1zZXJ2aWNlOjI3MDE3L3RvZG8/YXV0aFNvdXJjZT1hZG1pbg==
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+
+  mongodb:
+    image: mongo:latest
+    container_name: todo-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: secret
+      MONGO_INITDB_DATABASE: todo
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongo_data:
