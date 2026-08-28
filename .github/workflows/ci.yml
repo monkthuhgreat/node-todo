@@ -15,8 +15,8 @@ permissions:
 
 env:
   REGISTRY: docker.io
+  # Если secrets.DOCKER_USERNAME пустой в PR от внешних контрибьюторов, workflow не упадет при формировании строки
   IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/nodejs-todo
-  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
   build-and-push:
@@ -24,8 +24,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js 
         uses: actions/setup-node@v4
@@ -34,48 +32,63 @@ jobs:
           cache: 'npm'
           cache-dependency-path: app/package-lock.json
 
-      - name: Install dependencies
+      - name: Install dependencies and Test
         working-directory: ./app
-        run: npm test
+        run: |
+          npm ci
+          npm test
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
+        # Логинимся только если это пуш в main или PR внутри одного репозитория (где есть секреты)
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }} 
 
-      - name: Build Docker IMAGE_NAME
-        working-directory: ./app
-        run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
-          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} ${{ env.REGISTRY}}/${{ env.IMAGE_NAME }}:latest
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=long,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          # Пушим только при пуше в main. В PR просто проверяем сборку.
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: ${{ id.meta.outputs.tags }}
+          labels: ${{ id.meta.outputs.labels }}
+          # Включаем встроенный кэш GitHub Actions для ускорения сборки Docker
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Scan image for vulnerabilities (Trivy)
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v1
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: 'table'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
 
-      - name: Push Docker image
-        run: |
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
       - name: Update image tag in Kubernetes manifests
+        # Обновляем манифесты только при успешном пуше в ветку main
+        if: github.ref == 'refs/heads/main'
         run: |
-          sed -i "s|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|" manifests/deployment.yaml
+          sed -i "s|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|" manifests/deployment.yaml
 
       - name: Commit and push manifest changes
+        if: github.ref == 'refs/heads/main'
         run: |
-          git config user.name "Github Actions"
-          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add manifests/deployment.yaml
-          git commit -m "CI: Update image tag to ${{ env.IMAGE_TAG }} [skip ci]"
+          git commit -m "chore(deploy): update image tag to ${GITHUB_SHA::7} [skip ci]"
           git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
