@@ -22,7 +22,7 @@ metadata:
       spec:
         containers:
         - name: app
-          image: docker.io/monkthegreat/nodejs-todo:latest
+          image: docker.io/monkthegreat/nodejs-todo:460aec2243aafa02f70c03e69c284ff3e31101d2
           ports:
           - containerPort: 5000
           env:
