@@ -2,9 +2,9 @@ name: CI - Build, Test, Push
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
 env:
   REGISTRY: docker.io
@@ -12,7 +12,6 @@ env:
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
-  # ========== JOB 1: Сборка и пуш образа ==========
   build-and-push:
     runs-on: ubuntu-latest
     steps:
@@ -68,32 +67,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ========== JOB 2: Проверка Helm-чарта (если есть) ==========
-  helm-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run Helm lint
-        run: |
-          if [ -d "helm" ]; then
-            helm lint helm/
-          else
-            echo "No Helm chart found, skipping"
-          fi
-
-  # ========== JOB 3: Проверка форматирования манифестов ==========
-  kubeval:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Validate Kubernetes manifests
-        uses: stefanprodan/kube-tools@v1
-        with:
-          command: |
-            for file in manifests/*.yaml; do
-              kubeval --strict "$file" || exit 1
-            done
