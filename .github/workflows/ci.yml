@@ -2,11 +2,11 @@ name: CI - Build & Push
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - 'app/**'
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - 'app/**'
 
