@@ -5,7 +5,7 @@ metadata:
   namespace: todo-app
   labels:
     app: todo-app
-  spec: 
+spec: 
     replicas: 2
     strategy:
       type: RollingUpdate
@@ -22,7 +22,7 @@ metadata:
       spec:
         containers:
         - name: app
-          image: docker.io/monkthegreat/nodejs-todo:50642fa71aa1ecface7716b44908271d3fdcb5d5
+          image: cr.yandex/mirror/monkthegreat/nodejs-todo:latest
           ports:
           - containerPort: 5000
           env:
@@ -47,11 +47,11 @@ metadata:
             httpGet:
               path: /health
               port: 5000
-            initDelaySeconds: 15
+            initialDelaySeconds: 15
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /health
               port: 5000
-            initDelaySeconds: 5
+            initialDelaySeconds: 5
             periodSeconds: 5
