@@ -1,20 +1,30 @@
+# Указывание версии API и типа ресурса (Application — сущность, которой управляет ArgoCD)
 apiVersion: argoproj.io/v1alpha1
 kind: Application
+
+# Метаданные: задание имени приложения в панели ArgoCD и пространства имен, где работает сам ArgoCD
 metadata:
   name: todo-app
   namespace: argocd
+
+# Спецификация: детальные настройки синхронизации Git и Kubernetes 
 spec:
-  project: default
+  project: default # Группа (проект), к которой относится приложение в целях безопасности
+
+  # Источник данных 
   source:
-    repoURL: https://github.com/monkthuhgreat/node-todo
-    targetRevision: main
-    path: manifests
+    repoURL: https://github.com/monkthuhgreat/node-todo # Ссылка на репозиторий GitHub
+    targetRevision: main                                # Ветка, за которой нужно следить
+    path: manifests                                     # Папка внутри репозитория, где лежат файлы K8s
+
+  # Назначение (Куда ArgoCD деплоит приложение)  
   destination:
-    server: https://kubernetes.default.service
-    namespace: todo-app
+    server: https://kubernetes.default.service # Адрес локального API-сервера Kubernetes кластера
+    namespace: todo-app                        # Целевое пространство имен для Node.js приложения
+  # Политика синхронизации (Автоматизация деплоя)
   syncPolicy:
     automated:
-      prune: true
-      selfHeal: true
+      prune: true #  При удалении файла из папки manifests в Git, ArgoCD сам удалит его из Kubernetes кластера
+      selfHeal: true # Если кто-то вручную изменит настройки в кластере через kubectl, ArgoCD вернет всё как было в Git
     syncOptions:
-    - CreateNamespace=true
+    - CreateNamespace=true # Если пространства имен todo-app еще нет в кластере, ArgoCD создаст его автоматически

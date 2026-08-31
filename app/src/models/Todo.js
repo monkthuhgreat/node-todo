@@ -16,4 +16,5 @@ const todoSchema = new mongoose.Schema({
   }
 });
 
+// Регистрация схемы как модель с именем 'Todo' и экспорт для использования в роутах
 module.exports = mongoose.model('Todo', todoSchema);

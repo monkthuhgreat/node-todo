@@ -1,20 +1,31 @@
+# Указывание версии API и типа ресурса (Deployment управляет запуском и обновлением подов)
 apiVersion: apps/v1
 kind: Deployment
+
+# Название деплоя, его пространство имен и базовая метка
 metadata: 
   name: todo-app
   namespace: todo-app
   labels:
     app: todo-app
+
+# Спецификация: настройки масштабирования и логики работы контейнеров    
 spec: 
-    replicas: 2
+    replicas: 2 # Количество одновременно запущенных копий приложения для отказоустойчивости
+
+    # Стратегия плавного обновления приложения без остановки сервиса (Zero Downtime)
     strategy:
       type: RollingUpdate
       rollingUpdate:
-        maxSurge: 1
-        maxUnavailable: 0
+        maxSurge: 1 # На сколько подов можно превысить лимит в процессе обновления (создается 1 новый под)
+        maxUnavailable: 0 # Сколько подов могут быть недоступны (0 означает, что старые поды не удалятся, пока новые не запустятся)
+
+    # Селектор связывает этот Deployment с подами, имеющими точно такую же метку    
     selector:
       matchLabels:
         app: todo-app
+
+    # Шаблон, по которому будут создаваться поды с приложением    
     template:
       metadata:
         labels:
@@ -22,36 +33,44 @@ spec:
       spec:
         containers:
         - name: app
-          image: cr.yandex/mirror/monkthegreat/nodejs-todo:latest
+          image: monkthegreat/nodejs-todo:latest # Ссылка на Docker-образ вашего приложения в Docker Hub
           ports:
-          - containerPort: 5000
+          - containerPort: 5000 # Порт, который контейнер открывает наружу
+
+          # Переменные окружения, которые передаются внутрь Node.js
           env:
           - name: NODE_ENV
             valueFrom:
               configMapKeyRef:
-                name: todo-config
-                key: NODE_ENV
+                name: todo-config # Установление значения режима работы (production) из ConfigMap
+                key: NODE_ENV 
           - name: PORT
             valueFrom:
               secretKeyRef:
-                name: todo-secret
+                name: todo-secret # Получение адреса подключения к базе данных из Secret ради безопасности
                 key: MONGO_URI
+
+          # Ограничение системных ресурсов для контейнера (чтобы приложение не заняло весь сервер)      
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: "128Mi" # Минимально гарантированный объем оперативной памяти
+              cpu: "100m"     # Минимально гарантированная мощность процессора (0.1 ядра)
             limits:
-              memory: "256Mi"
-              cpu: "200m"
+              memory: "256Mi" # Максимальный порог памяти (выше него контейнер перезапустится)
+              cpu: "200m"     # Максимальный порог процессора
+
+          # Проверка: Не зависло ли приложение внутри контейнера
           livenessProbe:
             httpGet:
-              path: /health
+              path: /health # Стучится по этому адресу. Если вернется ошибка, K8s перезапустит контейнер
               port: 5000
-            initialDelaySeconds: 15
-            periodSeconds: 10
+            initialDelaySeconds: 15 # Ждать 15 секунд после старта перед первой проверкой
+            periodSeconds: 10 # Проверять каждые 10 секунд
+
+          # Проверка "готовности": Kubernetes проверяет, можно ли направлять реальных пользователей на этот под  
           readinessProbe:
             httpGet:
-              path: /health
+              path: /health # Проверяет, готово ли приложение отвечать на запросы
               port: 5000
-            initialDelaySeconds: 5
-            periodSeconds: 5
+            initialDelaySeconds: 5 # Ждать 5 секунд перед первой проверкой
+            periodSeconds: 5       # Проверять каждые 5 секунд

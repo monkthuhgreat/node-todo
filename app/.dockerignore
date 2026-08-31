@@ -1,8 +1,11 @@
 Dockerfile
 .dockerignore
-node_modules
+node_modules/
 npm-debug.log
 dist
 build
 .git
 .env
+.vscode/
+.idea/
+*.log

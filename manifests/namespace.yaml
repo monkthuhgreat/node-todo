@@ -1,4 +1,7 @@
+# Указывание версии API и типа ресурса (Namespace — логическая папка внутри) 
 apiVersion: v1
 kind: Namespace
+
+# Метаданные: задание уникальных имен для пространства имен
 metadata:
   name: todo-app

@@ -1,39 +1,43 @@
 version: '3.8'
 
+# Описание всех контейнеров (сервисов), которые запустятся вместе
 services:
+  # Сервис Node.js приложения
   app:
-    build: ./app
-    container_name: todo-app
-    restart: always
+    build: ./app # Путь к папке с файлом Dockerfile для сборки образа
+    container_name: todo-app # Понятное имя для запущенного контейнера
+    restart: always # Автоматически перезапускать контейнер, если он упадет из-за ошибки
     ports:
-      - "5000:5000"
+      - "5000:5000" # Проброс портов: связывается порт 5000 компьютера с портом 5000 контейнера
     environment:
-      - NODE_ENV=development
-      - MONGO_URI=bW9uZ29kYjovL2FkbWluOnNlY3JldEBtb25nby1zZXJ2aWNlOjI3MDE3L3RvZG8/YXV0aFNvdXJjZT1hZG1pbg==
+      - NODE_ENV=development # Включение режима разработки (для вывода подробных логов)
+      - MONGO_URI=mongodb://admin:secret@todo-mongo:27017/todo?authSource=admin
     depends_on:
       mongodb:
-        condition: service_healthy
+        condition: service_healthy # Приложение начнет запускаться только после того, как база данных полностью загрузится и пройдет проверку 
     volumes:
-      - ./app:/app
-      - /app/node_modules
+      - ./app:/app # Монтирование папки с кодом: любые изменения в коде на компьютере сразу появятся в контейнере (Hot Reload)
+      - /app/node_modules # Изоляция папки node_modules контейнера, чтобы локальная папка с компьютера ее не затерла
 
+  # Сервис базы данных MongoDB
   mongodb:
-    image: mongo:latest
-    container_name: todo-mongo
-    restart: always
+    image: mongo:latest # Скачивание официального образа MongoDB из Docker Hub
+    container_name: todo-mongo # Имя контейнера базы данных (используется как сетевой хост для приложения)
+    restart: always # Перезапускать при падениях
     ports:
-      - "27017:27017"
+      - "27017:27017" # Проброс стандартного порта MongoDB наружу
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: secret
-      MONGO_INITDB_DATABASE: todo
+      MONGO_INITDB_ROOT_USERNAME: admin # Логин суперадминистратора для создания базы
+      MONGO_INITDB_ROOT_PASSWORD: secret # Пароль суперадминистратора
+      MONGO_INITDB_DATABASE: todo # Имя базы данных, которая создастся автоматически при старте
     volumes:
-      - mongo_data:/data/db
+      - mongo_data:/data/db # Сохранение данных базы на жестком диске, чтобы они не пропали при остановке контейнера
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"] # Команда проверяет, отвечает ли база на запросы
+      interval: 10s # Проверять каждые 10 секунд
+      timeout: 5s # Ждать ответ не больше 5 секунд
+      retries: 5 # Число попыток
 
+# Объявление постоянного хранилища (Volume) для сохранения данных MongoDB
 volumes:
   mongo_data:

@@ -1,8 +1,13 @@
+# Указание версии API и типа ресурса (ConfigMap — хранилище настроек)
 apiVersion: v1
 kind: ConfigMap
+
+# Метаданные: имя конфига и пространство имен 
 metadata:
   name: todo-config
   namespace: todo-app
+
+# Конфигурационные данные в формате Ключ: Значение
 data:
-  NODE_ENV: production
-  PORT: "5000"
+  NODE_ENV: production # Переменная окружения, говорящая Node.js работать в режиме продакшена (оптимально по скорости)
+  PORT: "5000"         # Порт, на котором запустится Express-сервер внутри контейнера 
