@@ -19,7 +19,7 @@ spec:
 
   # Назначение (Куда ArgoCD деплоит приложение)  
   destination:
-    server: https://kubernetes.default.service # Адрес локального API-сервера Kubernetes кластера
+    server: https://kubernetes.default.svc # Адрес локального API-сервера Kubernetes кластера
     namespace: todo-app                        # Целевое пространство имен для Node.js приложения
   # Политика синхронизации (Автоматизация деплоя)
   syncPolicy:
