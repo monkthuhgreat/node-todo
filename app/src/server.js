@@ -1,7 +1,7 @@
 const express = require('express');   // Главный фреймворк для создания веб-сервера
 const mongoose = require('mongoose'); // Библиотека для удобной работы с базой данных MongoDB
 const cors = require('cors');         // Разрешает внешним сайтам делать запросы к этому API
-require('dotenv').config();           // Позволяет прятать секретные данные в специальный файл .env
+require('dotenv').config();
 
 // Импорт готовых маршрутов (роутов) для задач из соседней папки
 const todoRoutes = require('./routes/todos');

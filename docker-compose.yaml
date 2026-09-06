@@ -4,20 +4,24 @@ version: '3.8'
 services:
   # Сервис Node.js приложения
   app:
-    build: ./app # Путь к папке с файлом Dockerfile для сборки образа
-    container_name: todo-app # Понятное имя для запущенного контейнера
-    restart: always # Автоматически перезапускать контейнер, если он упадет из-за ошибки
+    build: ./app
+    container_name: todo-app
+    restart: always
     ports:
-      - "5000:5000" # Проброс портов: связывается порт 5000 компьютера с портом 5000 контейнера
-    environment:
-      - NODE_ENV=development # Включение режима разработки (для вывода подробных логов)
-      - MONGO_URI=mongodb://admin:secret@todo-mongo:27017/todo?authSource=admin
+      - "5000:5000"
+    # --- ДОБАВЛЯЕМ ЭТУ СТРОКУ ---
+    # Docker сам прочитает файл .env из корня проекта и запишет переменные в систему
+    env_file:
+      - .env  
     depends_on:
       mongodb:
-        condition: service_healthy # Приложение начнет запускаться только после того, как база данных полностью загрузится и пройдет проверку 
+        condition: service_healthy
+    user: "root"
+    command: node src/server.js
     volumes:
-      - ./app:/app # Монтирование папки с кодом: любые изменения в коде на компьютере сразу появятся в контейнере (Hot Reload)
-      - /app/node_modules # Изоляция папки node_modules контейнера, чтобы локальная папка с компьютера ее не затерла
+      - ./app:/app
+      - /app/node_modules
+
 
   # Сервис базы данных MongoDB
   mongodb:

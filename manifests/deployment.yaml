@@ -36,21 +36,25 @@ spec:
           image: monkthegreat/nodejs-todo:latest # Ссылка на Docker-образ вашего приложения в Docker Hub
           ports:
           - containerPort: 5000 # Порт, который контейнер открывает наружу
-
           # Переменные окружения, которые передаются внутрь Node.js
           env:
           - name: NODE_ENV
             valueFrom:
               configMapKeyRef:
-                name: todo-config # Установление значения режима работы (production) из ConfigMap
+                name: todo-config 
                 key: NODE_ENV 
           - name: PORT
             valueFrom:
+              configMapKeyRef:
+                name: todo-config 
+                key: PORT
+          - name: MONGODB_URI
+            valueFrom:
               secretKeyRef:
-                name: todo-secret # Получение адреса подключения к базе данных из Secret ради безопасности
-                key: MONGO_URI
-
-          # Ограничение системных ресурсов для контейнера (чтобы приложение не заняло весь сервер)      
+                name: todo-secret
+                key: MONGODB_URI
+      
+          # Ограничение системных ресурсов для контейнера    
           resources:
             requests:
               memory: "128Mi" # Минимально гарантированный объем оперативной памяти
@@ -62,7 +66,7 @@ spec:
           # Проверка: Не зависло ли приложение внутри контейнера
           livenessProbe:
             httpGet:
-              path: /health # Стучится по этому адресу. Если вернется ошибка, K8s перезапустит контейнер
+              path: / 
               port: 5000
             initialDelaySeconds: 15 # Ждать 15 секунд после старта перед первой проверкой
             periodSeconds: 10 # Проверять каждые 10 секунд
@@ -70,7 +74,7 @@ spec:
           # Проверка "готовности": Kubernetes проверяет, можно ли направлять реальных пользователей на этот под  
           readinessProbe:
             httpGet:
-              path: /health # Проверяет, готово ли приложение отвечать на запросы
+              path: / 
               port: 5000
             initialDelaySeconds: 5 # Ждать 5 секунд перед первой проверкой
             periodSeconds: 5       # Проверять каждые 5 секунд
