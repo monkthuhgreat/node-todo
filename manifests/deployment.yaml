@@ -33,7 +33,7 @@ spec:
       spec:
         containers:
         - name: app
-          image: monkthegreat/nodejs-todo:latest # Ссылка на Docker-образ вашего приложения в Docker Hub
+          image: docker.io/monkthegreat/nodejs-todo:498d5d3a7ccbf00f6bceb1a99a1891d5a9eeb517
           ports:
           - containerPort: 5000 # Порт, который контейнер открывает наружу
           # Переменные окружения, которые передаются внутрь Node.js
